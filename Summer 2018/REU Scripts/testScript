@@ -1,0 +1,28 @@
+# Set work directory
+setwd("C:/Users/geo1k/OneDrive/Summer 2018/REU Scripts")
+
+# Load packages
+library("raster")
+library("rgdal")
+library("sp")
+
+# Create a list of NDVI file paths
+NDVI_HARV_path <- "C:/Users/geo1k/OneDrive/Summer 2018/REU Scripts/NEONDSLandsatNDVI")
+all_NDVI_HARV <- list.files(NDVI_HARV_path,
+                            full.names = TRUE,
+                            pattern = ".tif$")
+
+# Create a raster stack
+NDVI_HARV_stack <- stack(all_NDVI_HARV)
+
+# Rescale data
+NDVI_HARV_stack <- NDVI_HARV_stack / 10000
+
+# Plot time series data
+plot(NDVI_HARV_stack,
+     zlim = c(.15, 1),
+     nc = 4)
+
+# Plot histograms of each raster
+hist(NDVI_HARV_stack,
+     xlim = c(0, 1))

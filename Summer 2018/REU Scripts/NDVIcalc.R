@@ -1,48 +1,35 @@
 # load packages 
-setwd("/Users/mnukala/Documents/REU Project/NDVI and EVI/")
+setwd("/Users/mnukala/Documents/REU Project/Humacao Landsat Imagery/LC080040472017101201T1-SC20180605155703/")
 library(raster)
 library(rgdal)
 library(sp)
 library(ggplot2)
 
-# load 16-bit bands 4 - 6
-b6 <- raster("/Users/mnukala/Documents/REU Project/Humacao Landsat Imagery/LC080040472017101201T1-SC20180605155703/LC08_L1TP_004047_20171012_20171024_01_T1_b6.tif")
-b5 <- raster("/Users/mnukala/Documents/REU Project/Humacao Landsat Imagery/LC080040472017101201T1-SC20180605155703/LC08_L1TP_004047_20171012_20171024_01_T1_b5.tif")
-b4 <- raster("/Users/mnukala/Documents/REU Project/Humacao Landsat Imagery/LC080040472017101201T1-SC20180605155703/LC08_L1TP_004047_20171012_20171024_01_T1_b4.tif")
-b2 <- raster("/Users/mnukala/Documents/REU Project/Humacao Landsat Imagery/LC080040472017101201T1-SC20180605155703/LC08_L1TP_004047_20171012_20171024_01_T1_b2.tif")
-
-# I want to use this loop to load the files as rasters
-# it's loading files as characters
-bands = list.files(path,
-                   full.names = FALSE,
-                   pattern = "T1_b\\d.tif$")
-
-# and then name each with the substring from the file name (b1, b2, b3, etc.)
-for(i in length(bands)){
-  name <- substring(bands[[i]], 42, 43) #For each
+temp <- list.files(pattern = "T1_b\\d.tif$")
+bands <- lapply(temp, raster)
+band.names <- c("b1", "b2", "b3", "b4", "b5", "b6", "b7")
+for(i in 1:7){
+  names(bands[[i]]) <- band.names[[i]]
 }
-
-# function for adjusting extent of values to 0:255
 val_adjust <- function(raster){
   ((raster - minValue(raster)) * 255) / (maxValue(raster) - minValue(raster)) + 0
 }
-
-# adjust each band (loop wouldn't work)
-b6 <- val_adjust(b6)
-b5 <- val_adjust(b5)
-b4 <- val_adjust(b4)
-b2 <- val_adjust(b2)
-bands = list(b6, b5, b4, b2)
-
-# stack raster layers
-satImage <- stack(bands)
-plotRGB(satImage)
+for(i in 1:7){
+  bands[[i]] <- val_adjust(bands[[i]])
+  message("band ", i, " of 7 complete")
+  print(maxValue(bands[[i]]))
+}
+for(i in 1:7){
+  print(maxValue(bands[[i]]))
+}
+satImg <- stack(bands[1:6], quick=TRUE)
+plotRGB(satImg, 6, 5, 4)
 
 # overlay ndvi
 ndviFun <- function(nir, red){
   (nir - red) / (nir + red)
 }
-ndvi2 <- overlay(b5, b4, fun = ndviFun)
+ndvi2 <- overlay(bands[[5]], bands[[4]], fun = ndviFun)
 plot(ndvi2, col = cm.colors(256))
 
 # overlay evi (this keeps on crashing for some reason)
@@ -90,7 +77,7 @@ writeRaster(stack_NDVI, "timeseries/n_timeseries",
             overwrite = TRUE)
 
 # calc & plot mean NDVI
-mean_NDVI <- cellStats(stack_NDVI, mean)
+mean_NDVI <- cellStats(stack_NDVI, median)
 mean_NDVI <- as.data.frame(mean_NDVI)
 names(mean_NDVI) <- "avgNDVI"
 mean_NDVI$day <- 221
@@ -99,6 +86,3 @@ mean_NDVI[3,2] <- 283
 ggplot(mean_NDVI, aes(day, avgNDVI)) +
   geom_point(na.rm = TRUE) +
   coord_cartesian(xlim = c(0, 300), ylim = c(0, 0.450))
-
-
-

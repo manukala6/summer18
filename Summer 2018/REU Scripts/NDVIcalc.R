@@ -90,7 +90,7 @@ writeRaster(stack_NDVI, "timeseries/n_timeseries",
             overwrite = TRUE)
 
 # calc & plot mean NDVI
-mean_NDVI <- cellStats(stack_NDVI, median)
+mean_NDVI <- cellStats(stack_NDVI, mean)
 mean_NDVI <- as.data.frame(mean_NDVI)
 names(mean_NDVI) <- "avgNDVI"
 mean_NDVI$day <- 221

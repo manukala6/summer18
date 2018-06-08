@@ -28,10 +28,10 @@ val_adjust <- function(raster){
 }
 
 # adjust each band (loop wouldn't work)
-b6 <- val_adjust(b6_16)
-b5 <- val_adjust(b5_16)
-b4 <- val_adjust(b4_16)
-b2 <- val_adjust(b2_16)
+b6 <- val_adjust(b6)
+b5 <- val_adjust(b5)
+b4 <- val_adjust(b4)
+b2 <- val_adjust(b2)
 bands = list(b6, b5, b4, b2)
 
 # stack raster layers

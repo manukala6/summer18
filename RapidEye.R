@@ -42,10 +42,9 @@ rndvi_re1202 <- overlay(cr_re1202[[5]], cr_re1202[[4]], fun = rndviFun)
 plot(rndvi_re1202)
 
 # modified-red NDVI
-rmndviFun <- function(re, red, blue){
-  re_red <- red - r
-  re_blu <- red + r - (2 * blue)
-  rmndvi <- re_red / re_blue
+rmndviFun <- function(red_edge, red, blue){
+  rmndvi <- ((red - red_edge) / (red + red_edge - 2 * blue))
+  return(rmndvi)
 }
 rmdvi_re0917 <- overlay(cr_re0917[[5]], cr_re0917[[4]],
                         cr_re0917[[1]], fun = rndviFun)

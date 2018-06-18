@@ -36,14 +36,12 @@ plotRGB(cr_pl[[2]], 4, 3, 2, stretch = "hist")
 plotRGB(cr_pl0928, 4, 3, 2, stretch = "hist")
 
 # cloud masking -- NEEDS WORK
-udm_pl0912 = raster("/Users/mnukala/Documents/REU Project/Planet/UDM/CubeSat_0912_UDM.tif")
-udm_pl0928 = raster("/Users/mnukala/Documents/REU Project/Planet/UDM/CubeSat_0928_UDM.tif")
-udm_pl1013 = raster("/Users/mnukala/Documents/REU Project/Planet/UDM/CubeSat_1013_UDM.tif") 
-udm_pl1021 = raster("/Users/mnukala/Documents/REU Project/Planet/UDM/CubeSat_1021_UDM.tif") 
-udm_pl1104 = raster("/Users/mnukala/Documents/REU Project/Planet/UDM/CubeSat_1104_UDM.tif") 
-udm_pl1122 = raster("/Users/mnukala/Documents/REU Project/Planet/UDM/CubeSat_1122_UDM.tif") 
-udm_pl1202 = raster("/Users/mnukala/Documents/REU Project/Planet/UDM/CubeSat_1202_UDM.tif") 
-udm_pl1219 = raster("/Users/mnukala/Documents/REU Project/Planet/UDM/CubeSat_1219_UDM.tif") 
+setwd("/Users/mnukala/Documents/REU Project/Planet/UDM") # change date here
+udm_pl_temp <- list.files(pattern = ".tif$")
+udm_pl <- lapply(udm_pl_temp, raster)
+for(i in 1:length(udm_pl)){
+  assign(paste('udm_pl', dates[i], sep = ""), udm_pl[[i]])
+}
 udm_pl = list(udm_pl0912, udm_pl0928, udm_pl1013, udm_pl1021, udm_pl1104, udm_pl1122, 
               udm_pl1202, udm_pl1219)
 cr_udm_pl = list()

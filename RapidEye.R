@@ -30,29 +30,29 @@ plotRGB(cr_re1004, 5, 2, 1)
 plotRGB(cr_re1202, 5, 2, 1)
 
 # red NDVI
-rndviFun <- function(re, red){
-  rndvi <- ((red - re)/(red + re))
-  return(rndvi)
+rNDVIfun <- function(re, red){
+  rNDVI <- ((red - re)/(red + re))
+  return(rNDVI)
 }
-rndvi_re0917 <- overlay(cr_re0917[[5]], cr_re0917[[4]], fun = rndviFun)
-plot(rndvi_re0917)
-rndvi_re1004 <- overlay(cr_re1004[[5]], cr_re1004[[4]], fun = rndviFun)
-plot(rndvi_re1004)
-rndvi_re1202 <- overlay(cr_re1202[[5]], cr_re1202[[4]], fun = rndviFun)
-plot(rndvi_re1202)
+rNDVI_re0917 <- overlay(cr_re0917[[5]], cr_re0917[[4]], fun = rNDVIfun)
+plot(rNDVI_re0917)
+rNDVI_re1004 <- overlay(cr_re1004[[5]], cr_re1004[[4]], fun = rNDVIfun)
+plot(rNDVI_re1004)
+rNDVI_re1202 <- overlay(cr_re1202[[5]], cr_re1202[[4]], fun = rNDVIfun)
+plot(rNDVI_re1202)
 
 # modified-red NDVI
-rmndviFun <- function(red_edge, red, blue){
+rmNDVIfun <- function(red_edge, red, blue){
   rmndvi <- ((red - red_edge) / (red + red_edge - 2 * blue))
   return(rmndvi)
 }
-rmdvi_re0917 <- overlay(cr_re0917[[5]], cr_re0917[[4]],
-                        cr_re0917[[1]], fun = rndviFun)
-plot(rmndvi_re0917)
-rmdvi_re1004 <- overlay(cr_re1004[[5]], cr_re1004[[4]], 
-                        cr_re1004[[1]], fun = rndviFun)
-plot(rmndvi_re1004)
-rmdvi_re1202 <- overlay(cr_re1202[[5]], cr_re1202[[4]], 
-                        cr_re1202[[1]], fun = rndviFun)
-plot(rmndvi_re1202)
+rmNDVI_re0917 <- overlay(cr_re0917[[5]], cr_re0917[[4]],
+                        cr_re0917[[1]], fun = rmNDVIfun)
+plot(rmNDVI_re0917)                                         # when I try to plot rmNDVI
+rmNDVI_re1004 <- overlay(cr_re1004[[5]], cr_re1004[[4]], 
+                        cr_re1004[[1]], fun = rmNDVIfun)
+plot(rmNDVI_re1004)
+rmNDVI_re1202 <- overlay(cr_re1202[[5]], cr_re1202[[4]], 
+                        cr_re1202[[1]], fun = rmNDVIfun)
+plot(rmnNDVI_re1202)
 

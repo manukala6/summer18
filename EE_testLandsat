@@ -1,0 +1,29 @@
+// finding the image
+var point = ee.Geometry.Point(-65.76, 18.18);
+var start = ee.Date('2017-08-01');
+var finish = ee.Date('2017-10-30');
+var filteredCollection = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR')
+  .filterBounds(point)
+  .filterDate(start, finish)
+  .sort('CLOUD_COVER', true);
+var first = filteredCollection.first();
+
+// analysis with image
+var ld1012_full = ee.Image('LANDSAT/LC08/C01/T1_SR/LC08_004047_20171012');
+var ld0809_full = ee.Image('LANDSAT/LC08/C01/T1_SR/LC08_004047_20170809');
+var bands = ['B2', 'B3', 'B4', 'B5', 'B6', 'B7'];
+var ld1012 = ld1012_full.select(bands);
+var ld0809 = ld0809_full.select(bands);
+Map.addLayer(ld0809, {bands: ['B5', 'B4', 'B3'], min: 0, max: 10000}, 'Aug 09');
+Map.addLayer(ld1012, {bands: ['B5', 'B4', 'B3'], min: 0, max: 10000}, 'Oct 12');
+
+// define spectral endmembers
+var GV = [320, 800, 400, 5750, 2500, 1050];
+var NPV = [350, 550, 600, 1425, 1700, 1050];
+var water = [250, 375, 175, 50, 50, 50];
+
+// image unmixing
+var fractions_1012 = ld1012.unmix([NPV, GV, water]);
+Map.addLayer(fractions_1012, {}, 'unmixed Oct 12');
+var fractions_0809 = ld0809.unmix([NPV, GV, water]);
+Map.addLayer(fractions_0809, {}, 'unmixed Aug 09');

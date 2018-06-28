@@ -1,29 +1,87 @@
-// finding the image
-var point = ee.Geometry.Point(-65.76, 18.18);
-var start = ee.Date('2017-08-01');
-var finish = ee.Date('2017-10-30');
-var filteredCollection = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR')
-  .filterBounds(point)
-  .filterDate(start, finish)
-  .sort('CLOUD_COVER', true);
-var first = filteredCollection.first();
+// input images
+var hansenImage = ee.Image('UMD/hansen/global_forest_change_2015');
 
-// analysis with image
-var ld1012_full = ee.Image('LANDSAT/LC08/C01/T1_SR/LC08_004047_20171012');
-var ld0809_full = ee.Image('LANDSAT/LC08/C01/T1_SR/LC08_004047_20170809');
-var bands = ['B2', 'B3', 'B4', 'B5', 'B6', 'B7'];
-var ld1012 = ld1012_full.select(bands);
-var ld0809 = ld0809_full.select(bands);
-Map.addLayer(ld0809, {bands: ['B5', 'B4', 'B3'], min: 0, max: 10000}, 'Aug 09');
-Map.addLayer(ld1012, {bands: ['B5', 'B4', 'B3'], min: 0, max: 10000}, 'Oct 12');
+// input landsat image
+var collection = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR');
+var point = ee.Geometry.Point(-65.5, 18.5);
+var start = ee.Date('2017-08-01'); // change date here
+var end = ee.Date('2017-08-10'); // change date here
+var filteredCollection = collection
+  .filterBounds(point)
+  .filterDate(start, end);
+var first = filteredCollection.first();
+var vizParams = {
+  bands: ['B5', 'B4', 'B3'],
+  min:0, max: 7500
+};
+var landsat = ee.Image(first);
+var landsat2 = ee.Image('LANDSAT/LC08/C01/T1_SR/LC08_004047_20171012');
+//Map.addLayer(landsat, vizParams, 'Aug 09');
+Map.addLayer(landsat2, vizParams, 'Oct 12');
+
+// mask pixels below 50% forest
+var maskForest = function(image){
+  var forest = hansenImage.select('treecover2000');
+  var fmask = forest.gte(50);
+  var mf_image = image.updateMask(fmask);
+  return mf_image;
+};
+landsat = maskForest(landsat);
+landsat2 = maskForest(landsat2);
+//Map.addLayer(landsat, {bands: ['B5', 'B4', 'B3'], min: 0, max: 7500}, 'non-forest removed');
+
+// mask cloud pixels
+var maskClouds = function(image) {
+  var pqa = image.select('pixel_qa');
+  var cmask = pqa.lte(400);
+  var cm_image = image.updateMask(cmask);
+  return cm_image;
+};
+landsat = maskClouds(landsat);
+landsat2 = maskClouds(landsat2);
+//Map.addLayer(landsat, {bands: ['B5', 'B4', 'B3'], min: 0, max: 7500}, 'clouds removed');
+//Map.addLayer(landsat2, {bands: ['B5', 'B4', 'B3'], min: 0, max: 7500}, 'clouds removed');
 
 // define spectral endmembers
+var bands = ['B2', 'B3', 'B4', 'B5', 'B6', 'B7'];
+landsat = landsat.select(bands);
+landsat2 = landsat2.select(bands);
 var GV = [320, 800, 400, 5750, 2500, 1050];
 var NPV = [350, 550, 600, 1425, 1700, 1050];
 var water = [250, 375, 175, 50, 50, 50];
 
 // image unmixing
-var fractions_1012 = ld1012.unmix([NPV, GV, water]);
+var fractions_1012 = landsat2.unmix([NPV, GV, water]);
+var fractions_0809 = landsat.unmix([NPV, GV, water]);
+var frac_norm = function(fractions){
+  var NPV = fractions.select('band_0');
+  var GV = fractions.select('band_1');
+  if(GV.lt(0)){
+    GV = GV.multiply(-1);
+  }
+  if(NPV.lt(0)){
+    NPV = NPV.multiply(-1);
+  }
+  var sum = NPV.add(GV);
+  var normN = NPV.divide(sum);
+  var normP = GV.divide(sum);
+  var new_fractions = fractions
+    .addBands(normN)
+    .addBands(normP);
+  var normalized = new_fractions.select(
+    ['band_0', 'band_1', 'band_2', 'band_0_1', 'band_1_1'],
+    ['NPV', 'GV', 'water', 'NPV norm', 'GV norm']
+  );
+  return normalized;
+};
+fractions_0809 = frac_norm(fractions_0809);
+fractions_1012 = frac_norm(fractions_1012);
 Map.addLayer(fractions_1012, {}, 'unmixed Oct 12');
-var fractions_0809 = ld0809.unmix([NPV, GV, water]);
 Map.addLayer(fractions_0809, {}, 'unmixed Aug 09');
+
+// NPV change
+var NPV_diff_1 = fractions_1012.subtract(fractions_0809);
+Map.addLayer(NPV_diff_1, NPVvisParam, 'NPV change');
+
+
+

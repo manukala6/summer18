@@ -1,0 +1,133 @@
+// *** PLANETSCOPE HURRICANE MARIA DISTURBANCE IMPACT ***
+
+// add background layer
+Map.addLayer(pl1013, {bands: ['b4', 'b3', 'b2'], min: 0, max: 5000}, 'background 9/28');
+
+// planetscope: mask clouds
+var pl_cmask = function(planet_scene, udm){
+  udm = udm.lte(2);
+  planet_scene = planet_scene.updateMask(udm);
+  return(planet_scene);
+};
+
+// planetscope: calculate ndvi
+var calc_ndvi = function(planet_scene){
+  var ndvi = planet_scene.normalizedDifference(['b4', 'b3']);
+  var withNDVI = planet_scene.addBands(ndvi)
+    .rename(['b1', 'b2', 'b3', 'b4', 'ndvi']);
+  return(withNDVI);
+};
+
+// landsat 8: import scenes
+var ld0724 = ee.Image('LANDSAT/LC08/C01/T1_SR/LC08_004047_20170724')
+  .select(['B[4-5]', 'pixel_qa']);
+var ld1013 = ee.Image('LANDSAT/LC08/C01/T1_SR/LC08_004047_20171012')
+  .select(['B[4-5]', 'pixel_qa']);
+
+// landsat 8: mask clouds
+var ld_cmask =  function(landsat_scene){
+  var shadowBitMask = ee.Number(2).pow(3).int();
+  var cloudBitMask = ee.Number(2).pow(3).int();
+  var pqa = landsat_scene.select('pixel_qa');
+  var mask = pqa.bitwiseAnd(shadowBitMask).eq(0)
+    .and(pqa.bitwiseAnd(cloudBitMask).eq(0));
+  return landsat_scene.updateMask(mask);
+};
+
+// landsat 8: calculate ndvi
+var calc_l8_ndvi = function(landsat_scene){
+  landsat_scene = landsat_scene.select('B[4-5]');
+  var ndvi = landsat_scene.normalizedDifference(['B5', 'B4']);
+  var withNDVI = landsat_scene.addBands(ndvi)
+    .rename(['B4', 'B5', 'ndvi']);
+  return(withNDVI);
+};
+
+// calculate percent ndvi change
+var perc_ndvi_diff = function(PreH, PostH){
+  var ndvi_pre = PreH.select('ndvi');
+  var ndvi_post = PostH.select('ndvi');
+  var ndvi_diff = ndvi_post.subtract(ndvi_pre);
+  var percentage = ndvi_diff.divide(ndvi_pre).multiply(100);
+  return(percentage);
+};
+
+// apply functions
+// planetscope:
+pl0912 = pl_cmask(pl0912, pl0912_udm);
+pl0928 = pl_cmask(pl0928, pl0928_udm);
+pl072417 = calc_ndvi(pl072417);
+pl1013 = calc_ndvi(pl1013);
+var planet_maria_impact = perc_ndvi_diff(pl072417, pl1013).clip(pterocarpus);
+// landsat 8:
+ld0724 = ld_cmask(ld0724);
+ld1013 = ld_cmask(ld1013);
+ld0724 = calc_l8_ndvi(ld0724);
+ld1013 = calc_l8_ndvi(ld1013);
+var landsat_maria_impact = perc_ndvi_diff(ld0724, ld1013).clip(pterocarpus);
+
+// define visualization parameters
+var impactVizParams = {
+  bands: 'ndvi', 
+  min: -100, 
+  max: -0, 
+  "palette":["de0000","15cc00"]};
+  
+// plot imagery
+Map.addLayer(planet_maria_impact, impactVizParams, 'planet disturbance impact');
+Map.addLayer(landsat_maria_impact, impactVizParams, 'landsat disturbance impact');
+
+// *** COMPARE DIFFERENCES IN ESTIMATIONS ***
+
+// resample planetscope scene spatial resolution to 30m
+var planet_resample = function(planet_scene, landsat_scene){
+  var landsat_projection = landsat_scene.projection();
+  var planet_resample = planet_scene
+    .reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 100
+    })
+    .reproject({
+      crs: landsat_projection
+    });
+  return(planet_resample);
+};
+var resampled_pmi = planet_resample(planet_maria_impact, landsat_maria_impact);
+//Map.addLayer(resampled_pmi, impactVizParams, 'resampled');
+
+// compare differences in % change ndvi
+var comp_diff = resampled_pmi.subtract(landsat_maria_impact);
+Map.addLayer(comp_diff, {min: -20, max: 20}, 'difference');
+
+// remove outliers
+var highOutliers = comp_diff.lte(10);
+var lowOutliers = comp_diff.gte(30);
+comp_diff = comp_diff.updateMask(highOutliers);
+comp_diff = comp_diff.updateMask(lowOutliers);
+
+// set histogram options
+var optionsx = {
+  title: 'Difference in Percent NDVI Change',
+  fontSize: 12,
+  histogram: {
+    bucketWidth: 2,
+    minValue: -30,
+    maxValue: 10
+  },
+  hAxis: {title: 'difference'},
+  vAxis: {title: 'count'}
+};
+
+// plot histogram
+var histogram = ui.Chart.image.histogram(comp_diff)
+  .setOptions(optionsx);
+print(histogram);
+
+// descriptive statistics: count, mean, standard deviation
+var mean = comp_diff.reduceRegion(ee.Reducer.mean());
+var stdDev = comp_diff.reduceRegion(ee.Reducer.stdDev());
+print(mean);
+print(stdDev);
+
+
+

@@ -1,0 +1,56 @@
+// calculate texture
+var calc_texture = function(scene, geometry){
+  var kernel = ee.Kernel.circle({
+    radius: 2, 
+    units: 'pixels',
+  });
+  var cropped_scene = scene.clip(geometry).select('b4').glcmTexture({
+    size: 2,
+    kernel: kernel
+  });
+  var texture_scene = cropped_scene.select('b4_diss');
+  return(texture_scene);
+};
+
+// set visual parameters
+var textVizParams = {
+  bands: ['b4_diss'],
+  min: 0,
+  max: 750
+};
+
+// apply texture functions
+var ptero_0701 = calc_texture(pl070117, pterocarpus); // pre-storm
+var ptero_0724 = calc_texture(pl072417, pterocarpus); // pre-storm
+var ptero_0912 = calc_texture(pl0912, pterocarpus); // post-Irma
+var ptero_0928 = calc_texture(pl0928, pterocarpus); // post-Maria
+var ptero_1104 = calc_texture(pl1104, pterocarpus); // regrowth
+var ptero_1122 = calc_texture(pl1122, pterocarpus); // pre-storm NDVI reached
+var ptero_0118 = calc_texture(pl0118, pterocarpus); // secondary succession
+
+// plot
+Map.addLayer(ptero_0701, textVizParams, '070117');
+Map.addLayer(ptero_0724, textVizParams, '072417');
+Map.addLayer(ptero_0912, textVizParams, '0912');
+Map.addLayer(ptero_0928, textVizParams, '0928');
+Map.addLayer(ptero_1104, textVizParams, '1104');
+Map.addLayer(ptero_1122, textVizParams, '1122');
+Map.addLayer(ptero_0118, textVizParams, '0118');
+
+// calculate differences
+var pre_storm_diff = ptero_0724.subtract(ptero_0701);
+var irma_diff = ptero_0912.subtract(ptero_0724);
+var maria_diff = ptero_0928.subtract(ptero_0912);
+var total_diff = ptero_0118.subtract(ptero_0724);
+
+// plot differences
+var diffParams = {
+  bands: ['b4_diss'], 
+  min: -250, 
+  max: 250, 
+  "palette":["efa500","0004e4", "efa500"]};
+  
+Map.addLayer(pre_storm_diff, diffParams, 'pre-storm');
+Map.addLayer(irma_diff, diffParams, 'irma');
+Map.addLayer(maria_diff, diffParams, 'maria');
+Map.addLayer(total_diff, diffParams, 'regrowth');
